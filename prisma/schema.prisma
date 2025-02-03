@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Trucks {
+  id             String          @id @unique @default(uuid())
+  regnNo         String          @map("regn_no")
+  tires          Int
+  capacity       String
+  bodyType       String          @map("body_type")
+  length         Int
+  axleType       AxleType        @map("axle_type")
+  expirationTime DateTime        @map("expiration_time")
+  postedBy       String          @map("posted_by")
+  pickupPoint    String          @map("pickup_point")
+  pickupPlaceId  String?         @map("pickup_place_id")
+  dropPoint      String          @map("drop_point")
+  dropPlaceId    String?         @map("drop_place_id")
+  laneId         String?         @map("transport_lane_id")
+  laneDirection  LaneDirection?  @map("lane_direction")
+  bulkLogId      String?         @map("bulk_log_id")
+  bulkLog        bulkLogs?       @relation(fields: [bulkLogId], references: [id])
+  fare           Decimal
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?       @map("deleted_at")
+  user           User            @relation(fields: [postedBy], references: [id], "UserTrucks")
+  TransportLanes TransportLanes? @relation(fields: [laneId], references: [id])
+}
+
+model bulkLogs {
+  id         String    @id @unique @default(uuid())
+  userId     String    @map("user_id")
+  bulkType   bulkType  @map("bulk_type")
+  fileName   String    @map("file_name")
+  totalCount Int       @map("total_count")
+  user       User      @relation(fields: [userId], references: [id], "UserBulkLogs")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime? @map("deleted_at")
+  truck      Trucks[]
+  loads      Loads[]
+}
+
+model Loads {
+  id             String          @id @unique @default(uuid())
+  weight         String
+  unit           UNIT
+  pickupPoint    String          @map("pickup_point")
+  pickupPlaceId  String?         @map("pickup_place_id")
+  dropPoint      String          @map("drop_point")
+  dropPlaceId    String?         @map("drop_place_id")
+  laneId         String?         @map("transport_lane_id")
+  laneDirection  LaneDirection?  @map("lane_direction")
+  expirationTime DateTime        @map("expiration_time")
+  postedBy       String          @map("posted_by")
+  truckLength    String?         @map("truck_length")
+  // truckContainer String    @map("truck_container_type")
+  truckBody      String          @map("truck_body_type")
+  truckAxle      String?         @map("truck_axle_type")
+  truckTires     Int?            @map("truck_tires")
+  fare           Decimal
+  createdAt      DateTime        @default(now()) @map("created_at")
+  deletedAt      DateTime?       @map("deleted_at")
+  upatedAt       DateTime        @updatedAt
+  user           User            @relation(fields: [postedBy], references: [id], "UserLoads")
+  materialName   String          @map("material_name")
+  bulkLogId      String?         @map("bulk_log_id")
+  bulkLog        bulkLogs?       @relation(fields: [bulkLogId], references: [id])
+  TransportLanes TransportLanes? @relation(fields: [laneId], references: [id])
+}
+
+model SupplyTransporter {
+  id             String    @id @unique @default(uuid())
+  userId         String    @map("user_id")
+  companyName    String    @map("company_name")
+  homeBase       String    @map("home_base")
+  operatingLanes Json      @map("operating_lanes")
+  viewedBy       Int       @map("viewed_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  deletedAt      DateTime? @map("deleted_at")
+  user           User      @relation(fields: [userId], references: [id], "UserSupplyTransporter")
+
+  @@map("supply_transporter")
+}
+
+model DemandTransporter {
+  id          String    @id @unique @default(uuid())
+  userId      String    @unique @map("user_id")
+  companyName String    @map("company_name")
+  viewedBy    Int       @map("viewed_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  deletedAt   DateTime? @map("deleted_at")
+  user        User      @relation(fields: [userId], references: [id], "UserDemandTransporter")
+
+  @@map("demand_transporter")
+}
+
+model User {
+  id             String              @id @unique @default(uuid())
+  name           String?
+  phone          String              @unique
+  createdAt      DateTime            @default(now()) @map("created_at")
+  deletedAt      DateTime?           @map("deleted_at")
+  transportLanes TransportLanes[]    @relation("TransportLanes")
+  trucks         Trucks[]            @relation("UserTrucks")
+  loads          Loads[]             @relation("UserLoads")
+  bulkLogs       bulkLogs[]          @relation("UserBulkLogs")
+  supply         SupplyTransporter[] @relation("UserSupplyTransporter")
+  demand         DemandTransporter?  @relation("UserDemandTransporter")
+  servicesView   ServicesView?
+}
+
+model ServicesView {
+  id             String    @id @unique @default(uuid())
+  userId         String    @unique @map("user_id")
+  directoryViews Int?      @default(0) @map("directory_views")
+  loadViews      Int?      @default(0) @map("load_views")
+  truckViews     Int?      @default(0) @map("truck_views")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  deletedAt      DateTime? @map("deleted_at")
+  updatedAt      DateTime? @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("services_views")
+}
+
+model LaneRequest {
+  id           String    @id @unique @default(uuid())
+  pickupPoint  String    @map("pickup_point")
+  dropPoint    String    @map("drop_point")
+  requestCount Int       @map("request_count")
+  deletedAt    DateTime? @map("deleted_at")
+
+  @@unique([pickupPoint, dropPoint])
+  @@map("lane_request")
+}
+
+model TransportLanes {
+  id                String    @id @unique @default(uuid())
+  districtA         String    @map("district_a")
+  districtB         String    @map("district_b")
+  loadRequestAtoB   Int       @map("load_request_a_to_b")
+  loadRequestBtoA   Int       @map("load_request_b_to_a")
+  trucksCountAtoB   Int       @map("trucks_count_a_to_b")
+  trucksCountBtoA   Int       @map("trucks_count_b_to_a")
+  transportersCount Int       @map("transporters_count")
+  createdBy         String
+  createdAt         DateTime  @default(now()) @map("created_at")
+  deletedAt         DateTime? @map("deleted_at")
+  updatedAt         DateTime? @map("updated_at")
+
+  user   User     @relation(fields: [createdBy], references: [id], "TransportLanes")
+  Loads  Loads[]
+  Trucks Trucks[]
+
+  @@unique([districtA, districtB])
+  @@map("transport_lanes")
+}
+
+model TruckBody {
+  id        String    @id @unique @default(uuid())
+  name      String
+  type      BodyType
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+  updatedAt DateTime? @map("updated_at")
+
+  @@map("truck_body")
+}
+
+model Registry {
+  id            String  @id @unique @default(uuid())
+  tonnage       Float   @map("tonnage")
+  tires         Int?
+  axle          String?
+  unit          UNIT
+  configuration Json
+}
+
+enum BodyType {
+  OPEN
+  CLOSED
+}
+
+enum AxleType {
+  SMALL
+  MEDIUM
+}
+
+enum UNIT {
+  TN
+  KL
+}
+
+enum bulkType {
+  TRUCK
+  LOAD
+}
+
+enum LaneDirection {
+  A_to_B
+  B_to_A
+}
