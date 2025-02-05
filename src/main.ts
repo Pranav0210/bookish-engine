@@ -12,19 +12,17 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'debug', 'log', 'verbose'],
   });
+  // app.enableCors({
+  //   origin: '*',
+  //   methods: 'OPTIONS,HEAD,GET,PUT,PATCH,POST,DELETE',
+  //   // // preflightContinue: false,
+  //   credentials: true,
+  //   allowedHeaders: '*',
+  // });
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:5173',
-      'https://localhost:3000',
-      'https://localhost:3001',
-      'https://localhost:5173',
-    ],
-    methods: 'OPTIONS,HEAD,GET,PUT,PATCH,POST,DELETE',
-    // // preflightContinue: false,
-    credentials: true,
-    // allowedHeaders: '*',
+    origin: '*', // Adjust as needed (e.g., ["https://example.com"])
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization, app',
   });
 
   // Create Redis client with user and password (for Redis ACL)
